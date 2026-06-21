@@ -1,0 +1,21 @@
+{
+  "manifest_version": "0.3",
+  "name": "postmaster",
+  "version": "0.1.0",
+  "description": "Local, privacy-first MCP server for macOS Mail.app + Calendar. Reads/searches/summarizes mail, organizes (mark/flag/move/archive), drafts, and extracts multi-event timelines into Calendar with a review gate. All data stays on your machine.",
+  "author": { "name": "Nikko & Co LLC", "email": "nikkonco.llc@gmail.com" },
+  "license": "MIT OR Apache-2.0",
+  "keywords": ["mail", "calendar", "macos", "mcp", "privacy", "local"],
+  "server": {
+    "type": "node",
+    "entry_point": "dist/index.js",
+    "mcp_config": {
+      "command": "node",
+      "args": ["${__dirname}/dist/index.js"],
+      "env": {}
+    }
+  },
+  "compatibility": {
+    "platforms": ["darwin"]
+  }
+}
