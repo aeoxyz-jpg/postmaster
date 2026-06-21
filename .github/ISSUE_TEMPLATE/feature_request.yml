@@ -1,0 +1,23 @@
+name: Feature request
+description: Suggest an idea or a new capability
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What are you trying to do?
+      description: The use case or problem, not just the proposed solution.
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: Proposed behavior
+      description: What should Postmaster do? Which tool(s) would it touch?
+  - type: markdown
+    attributes:
+      value: |
+        Heads-up on scope: direct send, calendar writes, and deletes are intentionally
+        gated behind two-step confirmation, and the project stays **local-first** (no data
+        leaves the machine from the server). Provider support beyond Gmail (iCloud / Outlook /
+        IMAP) is a known, welcome area — the account layer is pluggable.

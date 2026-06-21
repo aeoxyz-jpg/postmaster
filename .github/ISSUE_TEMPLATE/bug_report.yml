@@ -1,0 +1,56 @@
+name: Bug report
+description: Something isn't working
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting! Most setup issues are macOS permissions — please run
+        `npm run diagnose` first and paste its output below; it usually pinpoints the cause.
+  - type: textarea
+    id: diagnose
+    attributes:
+      label: "`npm run diagnose` output"
+      description: Redact account emails if you prefer.
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What you asked / which tool, what you expected, what you got. Include any error text.
+    validations:
+      required: true
+  - type: input
+    id: macos
+    attributes:
+      label: macOS version
+      placeholder: "e.g. 26.5.1 (Apple Silicon)"
+    validations:
+      required: true
+  - type: input
+    id: node
+    attributes:
+      label: Node version
+      placeholder: "node -v"
+    validations:
+      required: true
+  - type: dropdown
+    id: client
+    attributes:
+      label: Client
+      options:
+        - Claude Code
+        - Claude Desktop / Cowork (.mcpb)
+        - Other
+    validations:
+      required: true
+  - type: checkboxes
+    id: perms
+    attributes:
+      label: Permissions granted
+      options:
+        - label: Full Disk Access (for the app running the server)
+        - label: Automation → Mail
+        - label: Automation → Calendar

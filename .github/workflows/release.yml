@@ -1,0 +1,34 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: build .mcpb & publish release
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Build the Desktop Extension bundle
+        run: npm run pack
+      - name: Publish release with the .mcpb attached
+        uses: softprops/action-gh-release@v2
+        with:
+          files: postmaster.mcpb
+          generate_release_notes: true
+          body: |
+            Postmaster — local Mail + Calendar MCP server for macOS.
+
+            The attached `postmaster.mcpb` is built for **Apple Silicon** (it bundles
+            a native `better-sqlite3` binary). For Intel Macs, build the bundle locally
+            with `npm run pack`. See `docs/INSTALL.md` for setup and required macOS
+            permissions.
