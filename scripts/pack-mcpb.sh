@@ -16,7 +16,7 @@ echo "==> staging bundle at $STAGE"
 rm -rf "$STAGE" "$OUT"
 mkdir -p "$STAGE"
 cp -R dist "$STAGE/dist"
-cp manifest.json package.json LICENSE README.md "$STAGE/"
+cp manifest.json package.json LICENSE-MIT LICENSE-APACHE NOTICE README.md "$STAGE/"
 
 echo "==> installing production dependencies into the bundle"
 ( cd "$STAGE" && npm install --omit=dev --no-audit --no-fund >/dev/null )
