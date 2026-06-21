@@ -6,10 +6,10 @@
 
 A privacy-first [MCP](https://modelcontextprotocol.io) server that lets Claude read, organize, draft, send, and schedule from macOS **Mail.app** and **Calendar** — entirely on your machine.
 
+[![CI](https://github.com/aeoxyz-jpg/postmaster/actions/workflows/ci.yml/badge.svg)](https://github.com/aeoxyz-jpg/postmaster/actions/workflows/ci.yml)
 ![macOS](https://img.shields.io/badge/macOS-Apple%20Silicon-black?logo=apple&logoColor=white)
 ![Node](https://img.shields.io/badge/node-%E2%89%A520-339933?logo=node.js&logoColor=white)
 ![MCP](https://img.shields.io/badge/MCP-server-7C3AED)
-![Tests](https://img.shields.io/badge/tests-49%20passing-brightgreen)
 ![License](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue)
 
 </div>
