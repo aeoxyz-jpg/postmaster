@@ -1,10 +1,28 @@
 import { describe, it, expect } from "vitest";
-import { listCalendars, createEvents, updateEvent, describeEvent, deleteEvent } from "../src/calendar/calendar.js";
+import { listCalendars, listEvents, createEvents, updateEvent, describeEvent, deleteEvent } from "../src/calendar/calendar.js";
 
 describe("listCalendars", () => {
   it("parses calendar list JSON", async () => {
     const cals = await listCalendars({ runner: async () => JSON.stringify([{ name: "Work", writable: true }, { name: "Holidays", writable: false }]) });
     expect(cals).toEqual([{ name: "Work", writable: true }, { name: "Holidays", writable: false }]);
+  });
+});
+
+describe("listEvents", () => {
+  it("passes start/end/query/limit/calendars JSON to JXA and parses events", async () => {
+    let got: string[] = [];
+    const res = await listEvents({
+      start: "2026-06-01T00:00:00", end: "2026-06-30T23:59:59", query: "flight", limit: 25, calendars: ["Work", "Home"], includeReadOnly: true,
+      runner: async (_f, args) => { got = args; return JSON.stringify([{ uid: "U9", title: "Flight to Houston", calendar: "Work", start: "2026-06-21T18:13:00Z", end: "2026-06-21T20:25:00Z", allDay: false, location: "IAH", writable: true }]); },
+    });
+    expect(got).toEqual(["2026-06-01T00:00:00", "2026-06-30T23:59:59", "flight", "25", JSON.stringify(["Work", "Home"]), "1"]);
+    expect(res[0]).toMatchObject({ uid: "U9", title: "Flight to Houston", calendar: "Work" });
+  });
+
+  it("defaults: empty filters, writable-only (includeReadOnly off)", async () => {
+    let got: string[] = [];
+    await listEvents({ runner: async (_f, args) => { got = args; return "[]"; } });
+    expect(got).toEqual(["", "", "", "50", "", "0"]);
   });
 });
 

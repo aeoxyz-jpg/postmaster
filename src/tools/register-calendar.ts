@@ -2,7 +2,18 @@ import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { ConfirmStore } from "../mail/confirm.js";
 import { resolveEvents, type EventDraft, type ResolvedEvent } from "../calendar/resolve.js";
-import { listCalendars, createEvents, updateEvent, describeEvent, deleteEvent, type CalendarEventInput } from "../calendar/calendar.js";
+import { listCalendars, listEvents, createEvents, updateEvent, describeEvent, deleteEvent, type CalendarEventInput } from "../calendar/calendar.js";
+
+const DAY_MS = 86400_000;
+// Date-only inputs are interpreted as a full local day so a 'YYYY-MM-DD' filter is intuitive.
+function normStart(s?: string): string | undefined {
+  if (!s) return undefined;
+  return /^\d{4}-\d{2}-\d{2}$/.test(s) ? `${s}T00:00:00` : s;
+}
+function normEnd(s?: string): string | undefined {
+  if (!s) return undefined;
+  return /^\d{4}-\d{2}-\d{2}$/.test(s) ? `${s}T23:59:59` : s;
+}
 
 function json(data: unknown) {
   return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
@@ -29,6 +40,24 @@ export function registerCalendarTools(server: McpServer, confirms: ConfirmStore)
   server.registerTool("list_calendars",
     { description: "List writable calendars by name (choose a target for commit_calendar_events).", inputSchema: {} },
     async () => json(await listCalendars()));
+
+  server.registerTool("list_calendar_events",
+    { description: "Find existing calendar events and their uid (to feed update_calendar_event / delete_calendar_event). Filters by start-date range + optional keyword (substring on title/location). Times are local 'YYYY-MM-DD' or 'YYYY-MM-DDTHH:MM'; start/end default to 30 days ago through 180 days ahead. Scans only WRITABLE calendars by default (those are the editable ones; set includeReadOnly to also list subscriptions like Holidays — slower). Narrowing with `calendars` is much faster (~1.5s/calendar).",
+      inputSchema: {
+        calendars: z.array(z.string()).optional().describe("filter to these calendar names; default all writable"),
+        start: z.string().optional().describe("range lower bound on event start"),
+        end: z.string().optional().describe("range upper bound on event start"),
+        query: z.string().optional().describe("case-insensitive substring on title/location"),
+        includeReadOnly: z.boolean().optional().describe("also scan read-only subscription calendars (slower)"),
+        limit: z.number().default(50),
+      } },
+    async ({ calendars, start, end, query, includeReadOnly, limit }) => {
+      const now = Date.now();
+      const startISO = normStart(start) ?? new Date(now - 30 * DAY_MS).toISOString();
+      const endISO = normEnd(end) ?? new Date(now + 180 * DAY_MS).toISOString();
+      const events = await listEvents({ start: startISO, end: endISO, query, limit, calendars, includeReadOnly });
+      return json({ window: { start: startISO, end: endISO }, count: events.length, events });
+    });
 
   server.registerTool("prepare_calendar_events",
     { description: "Resolve event drafts (relative/absolute/fuzzy dates) into a reviewable list. Does NOT write. Returns the normalized events (with uncertainty flags) + a confirm_token. Review with the user, then call commit_calendar_events with the token.",

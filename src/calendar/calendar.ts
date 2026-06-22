@@ -7,7 +7,7 @@ const jxa = (name: string) => join(HERE, "jxa", name);
 
 export type Runner = (file: string, args: string[]) => Promise<string>;
 const defaultRunner: Runner = (file, args) =>
-  runOsa({ language: "JavaScript", file, args, timeoutMs: 60000 });
+  runOsa({ language: "JavaScript", file, args, timeoutMs: 90000 });
 
 function parse<T>(json: string, script: string): T {
   try { return JSON.parse(json) as T; }
@@ -19,6 +19,31 @@ export interface CalendarInfo { name: string; writable: boolean; }
 export async function listCalendars(opts: { runner?: Runner } = {}): Promise<CalendarInfo[]> {
   const runner = opts.runner ?? defaultRunner;
   return parse<CalendarInfo[]>(await runner(jxa("list-calendars.js"), []), "list-calendars.js");
+}
+
+export interface CalendarEvent {
+  uid: string; title: string; calendar: string;
+  start: string | null; end: string | null; allDay: boolean; location: string; writable: boolean;
+}
+export interface ListEventsOpts {
+  start?: string; end?: string; query?: string; limit?: number;
+  calendars?: string[]; includeReadOnly?: boolean; runner?: Runner;
+}
+
+/** List existing events (with their uid) across calendars, filtered by start-date range +
+ *  optional keyword. The uid feeds straight into update_calendar_event / delete_calendar_event.
+ *  Scans only writable calendars unless includeReadOnly (their events are the actionable ones). */
+export async function listEvents(opts: ListEventsOpts = {}): Promise<CalendarEvent[]> {
+  const runner = opts.runner ?? defaultRunner;
+  const args = [
+    opts.start ?? "",
+    opts.end ?? "",
+    opts.query ?? "",
+    String(opts.limit ?? 50),
+    opts.calendars && opts.calendars.length ? JSON.stringify(opts.calendars) : "",
+    opts.includeReadOnly ? "1" : "0",
+  ];
+  return parse<CalendarEvent[]>(await runner(jxa("list-events.js"), args), "list-events.js");
 }
 
 export interface CalendarEventInput {
