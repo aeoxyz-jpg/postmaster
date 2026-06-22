@@ -22,7 +22,8 @@ export function registerConfigTools(server: McpServer, ctx: MailContext): void {
       },
     },
     async ({ account, calendar }) => {
-      const accountNames = ctx.accounts.map((a) => a.name);
+      // Only a sendable account (one with an email address) is a valid default sender.
+      const accountNames = ctx.accounts.filter((a) => a.emailAddresses.length > 0).map((a) => a.name);
       const calendarNames = (await listCalendars()).map((c) => c.name);
       const cfg = setDefaults({ account, calendar }, accountNames, calendarNames);
       return json({ defaults: cfg, note: "Defaults saved. Omit account/calendar in future calls to use them." });

@@ -68,8 +68,11 @@ export function registerWriteTools(server: McpServer, ctx: MailContext, confirms
     { description: "Send an email. account is optional — omitted uses your default account (auto-seeded on first use). TWO-STEP: call without confirm_token to get a token + a full summary of sender/recipients/subject/body for review; call again with the token to actually send. Sending cannot be undone.",
       inputSchema: { account: z.string().optional(), to: z.string(), subject: z.string(), body: z.string(), cc: z.string().optional(), confirm_token: z.string().optional() } },
     async ({ account, to, subject, body, cc, confirm_token }) => {
-      const { account: acct, reseeded } = resolveDefaultAccount(ctx.accounts, account);
       if (!confirm_token) {
+        // Resolve the default ONLY at stage time; the staged token is the source of truth for
+        // what the user reviewed. (Re-resolving at confirm could pick a different account if the
+        // default changed in between, and wrongly reject an already-reviewed send.)
+        const { account: acct, reseeded } = resolveDefaultAccount(ctx.accounts, account);
         const summary = `Send from ${acct} to ${to}${cc ? ` (cc ${cc})` : ""} — subject: "${subject}"`;
         const { token } = confirms.stage("send_message", { account: acct, to, subject, body, cc: cc ?? null }, summary);
         return json({
@@ -80,8 +83,9 @@ export function registerWriteTools(server: McpServer, ctx: MailContext, confirms
         });
       }
       const action = confirms.consume(confirm_token);
+      const acct = action.args.account as string; // what was reviewed
       if (action.kind !== "send_message"
-        || action.args.account !== acct || action.args.to !== to
+        || (account != null && account !== acct) || action.args.to !== to
         || action.args.subject !== subject || action.args.body !== body
         || (action.args.cc ?? null) !== (cc ?? null)) {
         throw new Error("confirm_token does not match this send request");
