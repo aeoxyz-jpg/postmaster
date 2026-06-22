@@ -31,7 +31,7 @@ Register the server (stdio):
 ```bash
 claude mcp add postmaster -- node /absolute/path/to/postmaster/dist/index.js
 ```
-Then in a Claude Code session the 20 tools are available. Verify with a read-only call like `list_accounts`, or ask Claude to run `doctor`.
+Then in a Claude Code session the 21 tools are available. Verify with a read-only call like `list_accounts`, or ask Claude to run `doctor`.
 
 ## 3b. Claude Desktop / Cowork (.mcpb)
 

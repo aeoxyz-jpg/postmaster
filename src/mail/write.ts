@@ -27,7 +27,7 @@ export async function setStatus(
   return parse<SetStatusResult>(json, "set-status.js");
 }
 
-export interface MoveResult { id: string; movedTo: string; }
+export interface MoveResult { id: string; movedTo: string; alreadyThere?: boolean; }
 
 export async function moveMessage(
   id: string, targetMailbox: string, opts: { runner?: Runner } = {}

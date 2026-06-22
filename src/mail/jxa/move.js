@@ -24,9 +24,16 @@ function run(argv) {
   const [id, target] = argv;
   const Mail = Application("Mail");
   const { acct, msg } = resolveMessage(Mail, id);
+  // If the message already lives in the target mailbox, moving is a no-op (e.g. Gmail
+  // "archive" on a message already in All Mail). Report it instead of silently doing nothing.
+  var current = "";
+  try { current = msg.mailbox().name(); } catch (e) {}
+  if (current === target) {
+    return JSON.stringify({ id, movedTo: target, alreadyThere: true });
+  }
   // pick the first mailbox in this account whose name matches exactly
   const boxes = acct.mailboxes().filter((m) => m.name() === target);
   if (boxes.length === 0) throw new Error("target mailbox not found in account: " + target);
   Mail.move(msg, { to: boxes[0] });
-  return JSON.stringify({ id, movedTo: target });
+  return JSON.stringify({ id, movedTo: target, alreadyThere: false });
 }
