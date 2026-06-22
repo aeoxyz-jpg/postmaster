@@ -48,7 +48,8 @@ export function searchMessages(db: EnvelopeDb, opts: SearchOpts): MessageHit[] {
   }
 
   const sql = `
-    SELECT m.ROWID AS rowid, m.date_sent AS date_sent, COALESCE(s.subject, '') AS subject,
+    SELECT m.ROWID AS rowid, CAST(m.message_id AS TEXT) AS msgid, m.date_sent AS date_sent,
+           COALESCE(s.subject, '') AS subject,
            COALESCE(a.address, '') AS address, COALESCE(a.comment, '') AS comment,
            m.read AS read, m.flagged AS flagged, mb.url AS url
     FROM messages m
@@ -61,7 +62,7 @@ export function searchMessages(db: EnvelopeDb, opts: SearchOpts): MessageHit[] {
   params.push(opts.limit);
 
   const rows = db.prepare(sql).all(...params) as Array<{
-    rowid: number; date_sent: number; subject: string; address: string;
+    rowid: number; msgid: string | null; date_sent: number; subject: string; address: string;
     comment: string; read: number; flagged: number; url: string;
   }>;
 
@@ -74,9 +75,14 @@ export function searchMessages(db: EnvelopeDb, opts: SearchOpts): MessageHit[] {
     const account = opts.accountNames.get(uuid) ?? uuid;
     const mailbox = decodeURIComponent(m[2].split("/").pop() ?? "");
     const from = r.comment ? `"${r.comment}" <${r.address}>` : r.address;
-    // id embeds the account NAME (not uuid) because the JXA write side addresses accounts by name (Mail.accounts.byName). ids are session-ephemeral references, not durable keys.
+    // id is account::mailbox::rowid::msgid. account NAME (not uuid) because the JXA write side
+    // addresses accounts by name (Mail.accounts.byName); rowid is Mail's volatile per-message id
+    // (changes on move/re-index); msgid is the stable Envelope-Index message_id hash, used to
+    // re-resolve the current rowid before a write (see resolveLiveId). msgid may be absent for
+    // some message types — the id then stays 3-part and is used as-is.
+    const stable = r.msgid ? `${account}::${mailbox}::${r.rowid}::${r.msgid}` : `${account}::${mailbox}::${r.rowid}`;
     out.push({
-      id: `${account}::${mailbox}::${r.rowid}`,
+      id: stable,
       date: new Date(r.date_sent * 1000).toISOString(),
       from,
       subject: r.subject,

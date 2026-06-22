@@ -8,7 +8,7 @@ export function buildFixtureDb(path: string): void {
     CREATE TABLE addresses (ROWID INTEGER PRIMARY KEY, address TEXT, comment TEXT);
     CREATE TABLE mailboxes (ROWID INTEGER PRIMARY KEY, url TEXT);
     CREATE TABLE messages (
-      ROWID INTEGER PRIMARY KEY, subject INTEGER, sender INTEGER, mailbox INTEGER,
+      ROWID INTEGER PRIMARY KEY, message_id INTEGER, subject INTEGER, sender INTEGER, mailbox INTEGER,
       date_sent INTEGER, read INTEGER, flagged INTEGER, deleted INTEGER
     );
   `);
@@ -20,11 +20,11 @@ export function buildFixtureDb(path: string): void {
   db.prepare("INSERT INTO addresses VALUES (?,?,?)").run(2, "news@promo.com", "Promo");
   db.prepare("INSERT INTO mailboxes VALUES (?,?)").run(10, `imap://${UUID_A}/[Gmail]/All%20Mail`);
   db.prepare("INSERT INTO mailboxes VALUES (?,?)").run(20, `imap://${UUID_I}/INBOX`);
-  // ROWID, subject, sender, mailbox, date_sent, read, flagged, deleted
+  // ROWID, message_id (stable hash), subject, sender, mailbox, date_sent, read, flagged, deleted
   const t = 1_700_000_000;
-  db.prepare("INSERT INTO messages VALUES (?,?,?,?,?,?,?,?)").run(101, 1, 1, 10, t + 100, 0, 1, 0);
-  db.prepare("INSERT INTO messages VALUES (?,?,?,?,?,?,?,?)").run(102, 2, 2, 10, t + 50, 1, 0, 0);
-  db.prepare("INSERT INTO messages VALUES (?,?,?,?,?,?,?,?)").run(103, 1, 1, 20, t + 10, 0, 0, 0);
-  db.prepare("INSERT INTO messages VALUES (?,?,?,?,?,?,?,?)").run(104, 2, 2, 10, t + 5, 0, 0, 1); // deleted
+  db.prepare("INSERT INTO messages VALUES (?,?,?,?,?,?,?,?,?)").run(101, 9001, 1, 1, 10, t + 100, 0, 1, 0);
+  db.prepare("INSERT INTO messages VALUES (?,?,?,?,?,?,?,?,?)").run(102, 9002, 2, 2, 10, t + 50, 1, 0, 0);
+  db.prepare("INSERT INTO messages VALUES (?,?,?,?,?,?,?,?,?)").run(103, 9003, 1, 1, 20, t + 10, 0, 0, 0);
+  db.prepare("INSERT INTO messages VALUES (?,?,?,?,?,?,?,?,?)").run(104, 9004, 2, 2, 10, t + 5, 0, 0, 1); // deleted
   db.close();
 }
