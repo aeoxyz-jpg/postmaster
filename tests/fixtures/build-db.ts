@@ -1,8 +1,8 @@
-import Database from "better-sqlite3";
+import { DatabaseSync } from "node:sqlite";
 
 /** Build a minimal Envelope Index mirroring the real schema subset used by reads. */
 export function buildFixtureDb(path: string): void {
-  const db = new Database(path);
+  const db = new DatabaseSync(path);
   db.exec(`
     CREATE TABLE subjects (ROWID INTEGER PRIMARY KEY, subject TEXT);
     CREATE TABLE addresses (ROWID INTEGER PRIMARY KEY, address TEXT, comment TEXT);

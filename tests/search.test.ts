@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import Database from "better-sqlite3";
+import { DatabaseSync } from "node:sqlite";
 import { openEnvelopeDb } from "../src/mail/db.js";
 import { buildFixtureDb } from "./fixtures/build-db.js";
 import { searchMessages } from "../src/mail/search.js";
@@ -37,7 +37,7 @@ describe("searchMessages", () => {
 
   it("includes messages that have no subject row (LEFT JOIN)", () => {
     const p = join(root, "nosubj");
-    const raw = new Database(p);
+    const raw = new DatabaseSync(p);
     raw.exec(`
       CREATE TABLE subjects (ROWID INTEGER PRIMARY KEY, subject TEXT);
       CREATE TABLE addresses (ROWID INTEGER PRIMARY KEY, address TEXT, comment TEXT);

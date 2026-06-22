@@ -24,7 +24,7 @@ export interface SearchOpts {
 
 export function searchMessages(db: EnvelopeDb, opts: SearchOpts): MessageHit[] {
   const where: string[] = ["m.deleted = 0", "m.date_sent > ?"];
-  const params: unknown[] = [opts.sinceEpoch];
+  const params: (string | number)[] = [opts.sinceEpoch];
 
   if (opts.query) {
     const q = `%${opts.query}%`;

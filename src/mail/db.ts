@@ -1,9 +1,9 @@
-import Database from "better-sqlite3";
+import { DatabaseSync } from "node:sqlite";
 import { existsSync, readdirSync, statSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 
-export type EnvelopeDb = Database.Database;
+export type EnvelopeDb = DatabaseSync;
 
 export function defaultMailRoot(): string {
   return join(homedir(), "Library", "Mail");
@@ -38,7 +38,7 @@ export function envelopeDbPath(versionDir: string): string {
 
 /** Open the Envelope Index strictly read-only. */
 export function openEnvelopeDb(dbPath: string): EnvelopeDb {
-  const db = new Database(dbPath, { readonly: true, fileMustExist: true });
-  db.pragma("busy_timeout = 5000");
+  const db = new DatabaseSync(dbPath, { readOnly: true });
+  db.exec("PRAGMA busy_timeout = 5000");
   return db;
 }

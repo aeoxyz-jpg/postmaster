@@ -12,7 +12,7 @@ export interface SummarizeOpts {
 
 export function summarize(db: EnvelopeDb, opts: SummarizeOpts): Summary {
   const where: string[] = ["m.deleted = 0", "m.date_sent > ?"];
-  const params: unknown[] = [opts.sinceEpoch];
+  const params: (string | number)[] = [opts.sinceEpoch];
   if (opts.accountUuids && opts.accountUuids.length) {
     where.push("(" + opts.accountUuids.map(() => "mb.url LIKE ?").join(" OR ") + ")");
     params.push(...opts.accountUuids.map((u) => `imap://${u}/%`));
