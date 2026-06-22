@@ -31,7 +31,7 @@ Register the server (stdio):
 ```bash
 claude mcp add postmaster -- node /absolute/path/to/postmaster/dist/index.js
 ```
-Then in a Claude Code session the 21 tools are available. Verify with a read-only call like `list_accounts`, or ask Claude to run `doctor`.
+Then in a Claude Code session the 22 tools are available. Verify with a read-only call like `list_accounts`, or ask Claude to run `doctor`.
 
 ## 3b. Claude Desktop / Cowork (.mcpb)
 
@@ -48,3 +48,4 @@ Then in a Claude Code session the 21 tools are available. Verify with a read-onl
 - The server shows as connected but only the `doctor` tool is listed → detection failed (usually missing Full Disk Access). Run `doctor` for the exact remediation, fix it, and restart the host app.
 - A write fails with "Not authorized to send Apple events" → approve the **Automation → Mail/Calendar** prompt, or enable it under Privacy & Security → Automation.
 - "No Mail version dir with an Envelope Index" → open Mail.app once so it builds its local index.
+- Defaults (default sending account / calendar) live in `~/Library/Application Support/postmaster/config.json` (override the location with `POSTMASTER_CONFIG`). Delete the file to re-seed from macOS, or use the `set_defaults` tool to change them.

@@ -29,7 +29,7 @@ Your mail and calendar **never leave your Mac**. Postmaster reads Mail's local d
 > *"Star anything from the bank and archive the newsletters."*
 > *"This offer-accepted email has a 30-day timeline — put the deadlines on my calendar."*
 
-## The 21 tools
+## The 22 tools
 
 | Group | Tools |
 |---|---|
@@ -39,6 +39,7 @@ Your mail and calendar **never leave your Mac**. Postmaster reads Mail's local d
 | 📤 **Send** | `send_message` *(two-step confirmed)* |
 | 🗑️ **Delete** | `delete_message` *(two-step confirmed)* |
 | 📅 **Calendar** | `list_calendars` · `list_calendar_events` · `prepare_calendar_events` · `commit_calendar_events` · `update_calendar_event` · `delete_calendar_event` *(two-step confirmed)* |
+| ⚙️ **Defaults** | `set_defaults` *(pick your default sending account + calendar; auto-seeded on first use)* |
 | 🩺 **Diagnose** | `doctor` *(always available — reports which permission is missing and how to grant it, right in the chat)* |
 
 > **Searching mail** is a case-insensitive *substring* match on subject/sender (e.g. `query: "two-factor"` matches `[two-factor] …`). A just-arrived message can take a moment to appear while Mail finishes indexing it.
@@ -46,6 +47,8 @@ Your mail and calendar **never leave your Mac**. Postmaster reads Mail's local d
 > **Message ids self-heal.** `search_messages` returns an id that stays valid even after you archive or move the message — the write tools re-resolve the message by a stable key, so `search → archive → delete` works without re-searching.
 
 > **Finding an event to edit/delete:** `list_calendar_events` returns each event's `uid` (filter by date range, keyword, or calendar) to feed `update_calendar_event` / `delete_calendar_event`. It scans your writable calendars by default; narrowing with `calendars` is fastest.
+
+> **Defaults.** `send_message` / `create_draft` and `prepare_calendar_events` work without naming an account/calendar — on first use postmaster picks your macOS default (first sendable account; Calendar's default-for-new-events, else your first writable calendar) and remembers it in `~/Library/Application Support/postmaster/config.json`. Change them anytime with `set_defaults`; `list_accounts` / `list_calendars` mark the current default, and `doctor` shows both.
 
 ### ✨ Multi-event extraction with a review gate
 
