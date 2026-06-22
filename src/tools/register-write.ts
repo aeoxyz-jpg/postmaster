@@ -2,6 +2,7 @@ import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { setStatus, moveMessage, createDraft, deleteMessage, sendMessage } from "../mail/write.js";
 import { resolveLiveId, describeMessage } from "../mail/resolve-id.js";
+import { resolveDefaultAccount } from "../mail/default-account.js";
 import type { ConfirmStore } from "../mail/confirm.js";
 import type { MailContext } from "../mail/context.js";
 
@@ -34,9 +35,13 @@ export function registerWriteTools(server: McpServer, ctx: MailContext, confirms
     async ({ id }) => json(await moveMessage(resolveLiveId(ctx, id), providerForId(ctx, id).archiveMailbox)));
 
   server.registerTool("create_draft",
-    { description: "Create a draft in the account's Drafts mailbox (silent). Returns draft_id. If the silent save can't be verified for this account, a visible compose window is opened instead and fallbackVisible is true (no draft_id).",
-      inputSchema: { account: z.string(), to: z.string(), subject: z.string(), body: z.string(), cc: z.string().optional() } },
-    async (input) => json(await createDraft(input)));
+    { description: "Create a draft in the account's Drafts mailbox (silent). Returns draft_id. account is optional — omitted uses your default account (auto-seeded on first use). If the silent save can't be verified for this account, a visible compose window is opened instead and fallbackVisible is true (no draft_id).",
+      inputSchema: { account: z.string().optional(), to: z.string(), subject: z.string(), body: z.string(), cc: z.string().optional() } },
+    async ({ account, to, subject, body, cc }) => {
+      const { account: acct, reseeded } = resolveDefaultAccount(ctx.accounts, account);
+      const res = await createDraft({ account: acct, to, subject, body, cc });
+      return json({ ...res, usedAccount: acct, defaultReseeded: reseeded });
+    });
 
   // delete is destructive -> two-step confirmation.
   server.registerTool("delete_message",
@@ -60,28 +65,27 @@ export function registerWriteTools(server: McpServer, ctx: MailContext, confirms
 
   // send is destructive + outward-facing -> two-step confirmation (like delete).
   server.registerTool("send_message",
-    { description: "Send an email from an account. TWO-STEP: call without confirm_token to get a token + a full summary of recipients/subject/body for review; call again with the token to actually send. Sending cannot be undone.",
-      inputSchema: { account: z.string(), to: z.string(), subject: z.string(), body: z.string(), cc: z.string().optional(), confirm_token: z.string().optional() } },
+    { description: "Send an email. account is optional — omitted uses your default account (auto-seeded on first use). TWO-STEP: call without confirm_token to get a token + a full summary of sender/recipients/subject/body for review; call again with the token to actually send. Sending cannot be undone.",
+      inputSchema: { account: z.string().optional(), to: z.string(), subject: z.string(), body: z.string(), cc: z.string().optional(), confirm_token: z.string().optional() } },
     async ({ account, to, subject, body, cc, confirm_token }) => {
-      if (!ctx.accounts.some((a) => a.name === account)) {
-        throw new Error(`unknown account: ${account}`);
-      }
+      const { account: acct, reseeded } = resolveDefaultAccount(ctx.accounts, account);
       if (!confirm_token) {
-        const summary = `Send from ${account} to ${to}${cc ? ` (cc ${cc})` : ""} — subject: "${subject}"`;
-        const { token } = confirms.stage("send_message", { account, to, subject, body, cc: cc ?? null }, summary);
+        const summary = `Send from ${acct} to ${to}${cc ? ` (cc ${cc})` : ""} — subject: "${subject}"`;
+        const { token } = confirms.stage("send_message", { account: acct, to, subject, body, cc: cc ?? null }, summary);
         return json({
           pending: true, confirm_token: token,
-          review: { account, to, cc: cc ?? null, subject, body },
+          review: { account: acct, to, cc: cc ?? null, subject, body },
+          defaultReseeded: reseeded,
           note: "Review the full message above. Re-call send_message with this confirm_token to send. This cannot be undone.",
         });
       }
       const action = confirms.consume(confirm_token);
       if (action.kind !== "send_message"
-        || action.args.account !== account || action.args.to !== to
+        || action.args.account !== acct || action.args.to !== to
         || action.args.subject !== subject || action.args.body !== body
         || (action.args.cc ?? null) !== (cc ?? null)) {
         throw new Error("confirm_token does not match this send request");
       }
-      return json(await sendMessage({ account, to, subject, body, cc }));
+      return json(await sendMessage({ account: acct, to, subject, body, cc }));
     });
 }

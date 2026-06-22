@@ -4,6 +4,7 @@ import { searchMessages } from "../mail/search.js";
 import { summarize } from "../mail/summarize.js";
 import { getMessage } from "../mail/read.js";
 import { computeMailboxPatterns, resolveUuids, type MailContext } from "../mail/context.js";
+import { loadConfig } from "../config.js";
 
 const DAY = 86400;
 function sinceFromDays(days?: number): number {
@@ -17,13 +18,16 @@ function json(data: unknown) {
 export function registerReadTools(server: McpServer, ctx: MailContext): void {
   server.registerTool(
     "list_accounts",
-    { description: "List Mail accounts detected at runtime (name, type, email addresses).", inputSchema: {} },
-    async () =>
-      json(
+    { description: "List Mail accounts detected at runtime (name, type, email addresses, whether it's the default sending account).", inputSchema: {} },
+    async () => {
+      const def = loadConfig().defaultAccount;
+      return json(
         ctx.accounts.map((a) => ({
           name: a.name, type: a.type, provider: a.provider.id, emailAddresses: a.emailAddresses,
+          isDefault: a.name === def,
         }))
-      )
+      );
+    }
   );
 
   server.registerTool(
