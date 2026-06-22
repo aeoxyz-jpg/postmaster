@@ -29,7 +29,7 @@ Your mail and calendar **never leave your Mac**. Postmaster reads Mail's local d
 > *"Star anything from the bank and archive the newsletters."*
 > *"This offer-accepted email has a 30-day timeline — put the deadlines on my calendar."*
 
-## The 17 tools
+## The 19 tools
 
 | Group | Tools |
 |---|---|
@@ -38,7 +38,7 @@ Your mail and calendar **never leave your Mac**. Postmaster reads Mail's local d
 | ✍️ **Draft** | `create_draft` *(saved to Drafts; opens a visible compose window if the silent save can't be confirmed)* |
 | 📤 **Send** | `send_message` *(two-step confirmed)* |
 | 🗑️ **Delete** | `delete_message` *(two-step confirmed)* |
-| 📅 **Calendar** | `list_calendars` · `prepare_calendar_events` · `commit_calendar_events` |
+| 📅 **Calendar** | `list_calendars` · `prepare_calendar_events` · `commit_calendar_events` · `update_calendar_event` · `delete_calendar_event` *(two-step confirmed)* |
 
 ### ✨ Multi-event extraction with a review gate
 
@@ -63,6 +63,7 @@ Destructive and outward-facing actions are **two-step**. `send_message`, `delete
 | Send (two-step confirmed) | ✅ works (verified on Gmail) |
 | Delete (two-step confirmed) | ✅ works |
 | Calendar multi-event + review gate + alarms + source notes | ✅ works |
+| Update / delete calendar events + reminders | ✅ works *(Calendar can't remove a single alarm, so changing an event's reminders recreates it with a new id)* |
 | All-day reminders at 9:00 | ⏳ V1 fires day-of at 00:00 |
 | iCloud / Outlook / generic IMAP accounts | ⏳ V1 ships Gmail + a generic fallback (the provider seam is pluggable) |
 

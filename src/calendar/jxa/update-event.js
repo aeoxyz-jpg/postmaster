@@ -5,6 +5,7 @@
 // alarm set (Calendar can't delete individual alarms) and a NEW uid is returned.
 // Output JSON: {uid, recreated, calendar}
 function findByUid(Cal, uid) {
+  // First match across calendars wins; V1 events have calendar-unique uids and no recurring series.
   var cals = Cal.calendars();
   for (var i = 0; i < cals.length; i++) {
     var m = cals[i].events.whose({ uid: uid })();
