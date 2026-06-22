@@ -5,6 +5,7 @@ import { registerReadTools } from "./tools/register-read.js";
 import { registerWriteTools } from "./tools/register-write.js";
 import { registerCalendarTools } from "./tools/register-calendar.js";
 import { registerHealthTools } from "./tools/register-health.js";
+import { registerConfigTools } from "./tools/register-config.js";
 import { ConfirmStore } from "./mail/confirm.js";
 
 async function main() {
@@ -31,6 +32,7 @@ async function main() {
     const confirms = new ConfirmStore();
     registerWriteTools(server, ctx, confirms);
     registerCalendarTools(server, confirms);
+    registerConfigTools(server, ctx);
   }
 
   await server.connect(new StdioServerTransport());
