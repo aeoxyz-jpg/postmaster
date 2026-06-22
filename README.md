@@ -7,8 +7,8 @@
 A privacy-first [MCP](https://modelcontextprotocol.io) server that lets Claude read, organize, draft, send, and schedule from macOS **Mail.app** and **Calendar** — entirely on your machine.
 
 [![CI](https://github.com/aeoxyz-jpg/postmaster/actions/workflows/ci.yml/badge.svg)](https://github.com/aeoxyz-jpg/postmaster/actions/workflows/ci.yml)
-![macOS](https://img.shields.io/badge/macOS-Apple%20Silicon-black?logo=apple&logoColor=white)
-![Node](https://img.shields.io/badge/node-%E2%89%A520-339933?logo=node.js&logoColor=white)
+![macOS](https://img.shields.io/badge/macOS-Intel%20%7C%20Apple%20Silicon-black?logo=apple&logoColor=white)
+![Node](https://img.shields.io/badge/node-%E2%89%A522.5-339933?logo=node.js&logoColor=white)
 ![MCP](https://img.shields.io/badge/MCP-server-7C3AED)
 ![License](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue)
 
@@ -29,7 +29,7 @@ Your mail and calendar **never leave your Mac**. Postmaster reads Mail's local d
 > *"Star anything from the bank and archive the newsletters."*
 > *"This offer-accepted email has a 30-day timeline — put the deadlines on my calendar."*
 
-## The 19 tools
+## The 20 tools
 
 | Group | Tools |
 |---|---|
@@ -39,6 +39,7 @@ Your mail and calendar **never leave your Mac**. Postmaster reads Mail's local d
 | 📤 **Send** | `send_message` *(two-step confirmed)* |
 | 🗑️ **Delete** | `delete_message` *(two-step confirmed)* |
 | 📅 **Calendar** | `list_calendars` · `prepare_calendar_events` · `commit_calendar_events` · `update_calendar_event` · `delete_calendar_event` *(two-step confirmed)* |
+| 🩺 **Diagnose** | `doctor` *(always available — reports which permission is missing and how to grant it, right in the chat)* |
 
 ### ✨ Multi-event extraction with a review gate
 
@@ -72,20 +73,20 @@ Destructive and outward-facing actions are **two-step**. `send_message`, `delete
 ## Requirements
 
 - macOS with Mail.app set up (Gmail account(s) for full fidelity)
-- Node.js 20+
+- Node.js **22.5+** (the SQLite reader uses the built-in `node:sqlite` — no native module, no compile step, and the `.mcpb` is the same for Intel and Apple Silicon)
 - Two macOS permissions, walked through in the installer: **Full Disk Access** (to read the Mail database) and **Automation → Mail / Calendar** (to make changes)
 
 ## Install
 
 See **[docs/INSTALL.md](docs/INSTALL.md)** for Claude Code and Claude Desktop/Cowork setup plus the permission walkthrough.
 
-Sanity-check any time:
+Sanity-check any time — from the shell:
 
 ```bash
 npm run diagnose
 ```
 
-It reports whether Full Disk Access, the Mail database, and Mail automation are all working, and lists your accounts.
+…or right inside the chat, just **ask Claude to run `doctor`**. Either way it reports whether Full Disk Access, the Mail database, and Mail automation are working, lists your accounts, and tells you exactly what to grant if something's missing. The `doctor` tool is registered even when the rest can't start, so a permission problem shows up as a clear explanation instead of a silent "disconnected".
 
 ## How it works
 

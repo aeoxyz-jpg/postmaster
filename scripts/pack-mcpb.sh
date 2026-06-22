@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Build a macOS .mcpb Desktop Extension bundle.
-# The bundle includes the compiled dist/ (with JXA scripts) and production node_modules
-# (including the native better-sqlite3 binary), so it is architecture-specific.
+# The bundle includes the compiled dist/ (with JXA scripts) and production node_modules.
+# There is no native binary (SQLite reads use the built-in node:sqlite), so the
+# bundle is portable across Intel and Apple Silicon — it only requires Node >= 22.5.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
