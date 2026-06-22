@@ -15,7 +15,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
       - run: npm ci
       - name: Build the Desktop Extension bundle
@@ -28,7 +28,7 @@ jobs:
           body: |
             Postmaster — local Mail + Calendar MCP server for macOS.
 
-            The attached `postmaster.mcpb` is built for **Apple Silicon** (it bundles
-            a native `better-sqlite3` binary). For Intel Macs, build the bundle locally
-            with `npm run pack`. See `docs/INSTALL.md` for setup and required macOS
-            permissions.
+            The attached `postmaster.mcpb` has **no native binary** (SQLite reads use the
+            built-in `node:sqlite`), so it is **portable across Intel and Apple Silicon**.
+            It requires the host's Node to be **22.5+**. See `docs/INSTALL.md` for setup
+            and required macOS permissions.
