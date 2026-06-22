@@ -82,12 +82,15 @@ Destructive and outward-facing actions are **two-step**. `send_message`, `delete
 ## Requirements
 
 - macOS with Mail.app set up (Gmail account(s) for full fidelity)
-- Node.js **22.5+** (the SQLite reader uses the built-in `node:sqlite` — no native module, no compile step, and the `.mcpb` is the same for Intel and Apple Silicon)
+- **Node.js 22.5+** — only for the Claude Code / from-source path. The Claude Desktop `.mcpb` runs on Claude's **built-in** Node, so installing it needs **no Node and no build**. Either way there's no native module to compile, and the `.mcpb` is the same for Intel and Apple Silicon.
 - Two macOS permissions, walked through in the installer: **Full Disk Access** (to read the Mail database) and **Automation → Mail / Calendar** (to make changes)
 
 ## Install
 
-See **[docs/INSTALL.md](docs/INSTALL.md)** for Claude Code and Claude Desktop/Cowork setup plus the permission walkthrough.
+Two paths — see **[docs/INSTALL.md](docs/INSTALL.md)** for the full walkthrough:
+
+- **Claude Desktop (recommended):** download `postmaster.mcpb` from Releases → Settings → Extensions → **Advanced settings → Extension Developer → Install Extension…** → grant Full Disk Access to **Claude**. No Node, no build.
+- **Claude Code / CLI:** `npm install && npm run build`, then `claude mcp add postmaster -- node <abs>/dist/index.js`; grant Full Disk Access to your terminal.
 
 Sanity-check any time — from the shell:
 

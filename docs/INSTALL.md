@@ -1,51 +1,53 @@
 # Install & Permissions
 
-Postmaster runs locally on your Mac. It needs **Node.js 22.5+** and two macOS permission grants (no API keys). There is no native module to compile, so the same build runs on Intel and Apple Silicon.
+Postmaster runs locally on your Mac (no API keys, nothing leaves the machine). There are two ways to install it:
 
-The easiest path for most people is the **`.mcpb` Desktop Extension** (§3b): Full Disk Access is then granted once to **Claude.app** itself, and there's no Node version to manage.
+- **Claude Desktop (recommended for most people)** — install the `.mcpb` Desktop Extension. **No Node.js install, no build.** Full Disk Access is granted once to **Claude** itself. → [Path A](#path-a--claude-desktop-mcpb-recommended)
+- **Claude Code / CLI (developers)** — run from source. Needs **Node.js 22.5+**. → [Path B](#path-b--claude-code-cli-from-source)
 
-## 1. Build
+Either way you grant the same two macOS permissions (below), and there is no native module to compile — the `.mcpb` is the same for Intel and Apple Silicon.
+
+## macOS permissions (both paths)
+
+Both are required; macOS otherwise blocks access silently or with errors.
+
+- **Full Disk Access** — to *read* the Mail database. System Settings → Privacy & Security → **Full Disk Access** → add and enable the app that runs the server: **Claude** (Path A) or your **terminal** (Path B). Restart that app afterward.
+- **Automation → Mail / Calendar** — to *make changes*. The first time the server marks/moves/drafts/deletes mail or writes a calendar event, macOS prompts to allow controlling **Mail** / **Calendar** — click **OK**. Review later under System Settings → Privacy & Security → **Automation**.
+
+At any time, verify by **asking Claude to run `doctor`** (it reports the three checks + remediation, and works even if the other tools couldn't start), or from a source checkout run `npm run diagnose`.
+
+---
+
+## Path A — Claude Desktop (.mcpb, recommended)
+
+1. **Download `postmaster.mcpb`** from the project's **GitHub Releases** page (grab the latest version). You do *not* need Node.js or a build for this path — the extension runs on Claude Desktop's built-in Node.js (22.5+).
+2. In Claude Desktop: **Settings → Extensions**, scroll down to **Advanced settings**, find the **Extension Developer** section, and click **Install Extension…**, then choose the downloaded `.mcpb`.
+   - This is the supported way to install a local/self-built extension. The top "Apps & extensions" page only lists curated directory apps (Microsoft 365, Chrome, …) — it does **not** have a file-install button; the local installer lives under **Advanced settings**, behind a "Developer Tools Warning" (that's expected).
+3. Grant **Full Disk Access** to **Claude** (System Settings → Privacy & Security → Full Disk Access) and **restart Claude**.
+4. Approve the macOS **Automation → Mail/Calendar** prompt the first time you ask Claude to change something.
+5. Verify: ask Claude **"run postmaster's doctor"** — you want three ✓ (Mail library / Envelope Index / Accounts) plus the Defaults line.
+
+> Install the `.mcpb` from this project's Releases, not an older copy — pre-0.3 bundles used a native module (`better-sqlite3`) and will show "Server disconnected" under Claude's built-in Node. v0.3+ is pure `node:sqlite` and just works.
+
+## Path B — Claude Code / CLI (from source)
+
+Needs **Node.js 22.5+** (for the built-in `node:sqlite`).
 
 ```bash
-npm install   # Node 22.5+
+npm install
 npm run build
-```
-
-## 2. Grant macOS permissions
-
-Both are required; macOS will otherwise block access silently or with errors.
-
-### Full Disk Access (to READ your Mail database)
-1. System Settings → Privacy & Security → **Full Disk Access**.
-2. Add the app that will run the server: your **terminal** (for Claude Code) or **Claude** (for Desktop). Toggle it on.
-3. Restart that app.
-
-### Automation → Mail and Calendar (to make CHANGES)
-The first time the server marks/moves/drafts/deletes or writes a calendar event, macOS prompts to allow controlling **Mail** / **Calendar**. Click **OK**. You can review these later under System Settings → Privacy & Security → **Automation**.
-
-Run `npm run diagnose` to confirm all three checks pass (Full Disk Access, Mail database readable, accounts enumerated). Once the server is installed you can also just **ask Claude to run `doctor`** for the same report inside the chat — it works even if the other tools couldn't start.
-
-## 3a. Claude Code
-
-Register the server (stdio):
-```bash
 claude mcp add postmaster -- node /absolute/path/to/postmaster/dist/index.js
 ```
-Then in a Claude Code session the 22 tools are available. Verify with a read-only call like `list_accounts`, or ask Claude to run `doctor`.
 
-## 3b. Claude Desktop / Cowork (.mcpb)
+Grant **Full Disk Access to your terminal** (the app that launches `node`), then restart it. In a Claude Code session the 22 tools are available — verify with a read-only call like `list_accounts`, or ask Claude to run `doctor`.
 
-1. Build the bundle: `npm run pack` → produces `postmaster.mcpb`.
-2. In Claude Desktop: **Settings → Extensions → Install Extension** and choose the `.mcpb` file.
-3. Grant **Full Disk Access** to **Claude** (System Settings → Privacy & Security → Full Disk Access) and restart it.
-4. Approve the macOS Automation prompts on first write.
-
-> The `.mcpb` has **no native binary** (SQLite reads use the built-in `node:sqlite`), so it's **portable across Intel and Apple Silicon** — build it anywhere, install it anywhere. It only requires the host's Node to be **22.5+**.
+To rebuild the `.mcpb` yourself: `npm run pack` → produces `postmaster.mcpb`.
 
 ## Troubleshooting
 
-- `npm run diagnose` (or the in-chat `doctor` tool) shows a ✗ for Mail database → grant **Full Disk Access** to the running app and restart it.
-- The server shows as connected but only the `doctor` tool is listed → detection failed (usually missing Full Disk Access). Run `doctor` for the exact remediation, fix it, and restart the host app.
-- A write fails with "Not authorized to send Apple events" → approve the **Automation → Mail/Calendar** prompt, or enable it under Privacy & Security → Automation.
-- "No Mail version dir with an Envelope Index" → open Mail.app once so it builds its local index.
-- Defaults (default sending account / calendar) live in `~/Library/Application Support/postmaster/config.json` (override the location with `POSTMASTER_CONFIG`). Delete the file to re-seed from macOS, or use the `set_defaults` tool to change them.
+- **"Server disconnected" right after install** → you likely installed an old pre-0.3 bundle with a native module. Remove it and install the current `.mcpb` (v0.3+, no native binary).
+- **Connected but only the `doctor` tool is listed** → detection failed (usually missing Full Disk Access). Run `doctor` for the exact remediation, fix it, and restart the host app.
+- **`doctor` shows ✗ for the Mail database** → grant **Full Disk Access** to the running app (Claude for Path A, your terminal for Path B) and restart it.
+- **A write fails with "Not authorized to send Apple events"** → approve the **Automation → Mail/Calendar** prompt, or enable it under Privacy & Security → Automation.
+- **"No Mail version dir with an Envelope Index"** → open Mail.app once so it builds its local index.
+- **Defaults** (default sending account / calendar) live in `~/Library/Application Support/postmaster/config.json` (override with `POSTMASTER_CONFIG`). They auto-seed from macOS on first use; delete the file to re-seed, or use the `set_defaults` tool to change them.
