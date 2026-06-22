@@ -1,6 +1,6 @@
 {
   "name": "postmaster",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Local MCP server for macOS Mail.app + Calendar (privacy-first, runs on the user's machine)",
   "license": "MIT OR Apache-2.0",
   "author": "Nikko & Co LLC <nikkonco.llc@gmail.com>",
