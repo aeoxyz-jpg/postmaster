@@ -38,3 +38,28 @@ export async function createEvents(
   const json = await runner(jxa("create-events.js"), [calendar, JSON.stringify(events)]);
   return parse<CreateEventsResult>(json, "create-events.js");
 }
+
+export interface UpdateEventFields {
+  title?: string; start?: string; end?: string; location?: string; notes?: string; alerts?: number[];
+}
+export interface UpdateEventResult { uid: string; recreated: boolean; calendar: string; }
+
+export async function updateEvent(
+  uid: string, fields: UpdateEventFields, opts: { runner?: Runner } = {}
+): Promise<UpdateEventResult> {
+  const runner = opts.runner ?? defaultRunner;
+  const json = await runner(jxa("update-event.js"), [uid, JSON.stringify(fields)]);
+  return parse<UpdateEventResult>(json, "update-event.js");
+}
+
+export interface EventDescribe { found: boolean; uid: string; title?: string; calendar?: string; }
+export interface DeleteEventResult { uid: string; deleted: boolean; }
+
+export async function describeEvent(uid: string, opts: { runner?: Runner } = {}): Promise<EventDescribe> {
+  const runner = opts.runner ?? defaultRunner;
+  return parse<EventDescribe>(await runner(jxa("delete-event.js"), [uid, "describe"]), "delete-event.js");
+}
+export async function deleteEvent(uid: string, opts: { runner?: Runner } = {}): Promise<DeleteEventResult> {
+  const runner = opts.runner ?? defaultRunner;
+  return parse<DeleteEventResult>(await runner(jxa("delete-event.js"), [uid, "delete"]), "delete-event.js");
+}
