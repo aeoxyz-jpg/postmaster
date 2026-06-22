@@ -9,7 +9,7 @@ import { registerConfigTools } from "./tools/register-config.js";
 import { ConfirmStore } from "./mail/confirm.js";
 
 async function main() {
-  const server = new McpServer({ name: "postmaster", version: "0.5.0" });
+  const server = new McpServer({ name: "postmaster", version: "0.5.1" });
 
   // The doctor tool is always available so a setup problem is explained
   // in-conversation rather than surfacing as a bare "disconnected".
