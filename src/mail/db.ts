@@ -6,7 +6,9 @@ import { join } from "node:path";
 export type EnvelopeDb = DatabaseSync;
 
 export function defaultMailRoot(): string {
-  return join(homedir(), "Library", "Mail");
+  // POSTMASTER_MAIL_ROOT lets diagnostics/tests point at a non-default (or bogus)
+  // Mail library; normal runs fall back to ~/Library/Mail.
+  return process.env.POSTMASTER_MAIL_ROOT || join(homedir(), "Library", "Mail");
 }
 
 /** Find the live Mail version directory (e.g. V10) that contains an Envelope Index.
