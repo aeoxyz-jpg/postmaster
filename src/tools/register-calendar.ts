@@ -3,6 +3,8 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { ConfirmStore } from "../mail/confirm.js";
 import { resolveEvents, type EventDraft, type ResolvedEvent } from "../calendar/resolve.js";
 import { listCalendars, listEvents, createEvents, updateEvent, describeEvent, deleteEvent, type CalendarEventInput } from "../calendar/calendar.js";
+import { resolveDefaultCalendar, detectDefaultCalendar } from "../calendar/default-calendar.js";
+import { loadConfig } from "../config.js";
 
 const DAY_MS = 86400_000;
 // Date-only inputs are interpreted as a full local day so a 'YYYY-MM-DD' filter is intuitive.
@@ -38,8 +40,12 @@ function toCalendarInput(e: ResolvedEvent): CalendarEventInput {
 
 export function registerCalendarTools(server: McpServer, confirms: ConfirmStore): void {
   server.registerTool("list_calendars",
-    { description: "List writable calendars by name (choose a target for commit_calendar_events).", inputSchema: {} },
-    async () => json(await listCalendars()));
+    { description: "List writable calendars by name, marking the default target for new events (isDefault).", inputSchema: {} },
+    async () => {
+      const def = loadConfig().defaultCalendar;
+      const cals = await listCalendars();
+      return json(cals.map((c) => ({ ...c, isDefault: c.name === def })));
+    });
 
   server.registerTool("list_calendar_events",
     { description: "Find existing calendar events and their uid (to feed update_calendar_event / delete_calendar_event). Filters by start-date range + optional keyword (substring on title/location). Times are local 'YYYY-MM-DD' or 'YYYY-MM-DDTHH:MM'; start/end default to 30 days ago through 180 days ahead. Scans only WRITABLE calendars by default (those are the editable ones; set includeReadOnly to also list subscriptions like Holidays — slower). Narrowing with `calendars` is much faster (~1.5s/calendar).",
@@ -60,16 +66,20 @@ export function registerCalendarTools(server: McpServer, confirms: ConfirmStore)
     });
 
   server.registerTool("prepare_calendar_events",
-    { description: "Resolve event drafts (relative/absolute/fuzzy dates) into a reviewable list. Does NOT write. Returns the normalized events (with uncertainty flags) + a confirm_token. Review with the user, then call commit_calendar_events with the token.",
-      inputSchema: { calendar: z.string(), events: z.array(draftSchema) } },
+    { description: "Resolve event drafts (relative/absolute/fuzzy dates) into a reviewable list. Does NOT write. calendar is optional — omitted uses your default calendar (auto-seeded on first use). Returns the normalized events (with uncertainty flags) + a confirm_token. Review with the user, then call commit_calendar_events with the token.",
+      inputSchema: { calendar: z.string().optional(), events: z.array(draftSchema) } },
     async ({ calendar, events }) => {
+      const { calendar: cal, reseeded } = await resolveDefaultCalendar({
+        explicit: calendar, calendars: await listCalendars(), detect: detectDefaultCalendar,
+      });
       const resolved = resolveEvents(events as EventDraft[]);
       const writable = resolved.filter((e) => !e.uncertain).map(toCalendarInput);
       const uncertain = resolved.filter((e) => e.uncertain);
-      const { token } = confirms.stage("commit_calendar_events", { calendar, events: writable }, `Create ${writable.length} event(s) in "${calendar}"`);
+      const { token } = confirms.stage("commit_calendar_events", { calendar: cal, events: writable }, `Create ${writable.length} event(s) in "${cal}"`);
       return json({
-        calendar,
-        to_create: resolved,                 // full list incl. uncertain, for user review
+        calendar: cal,
+        defaultReseeded: reseeded,
+        to_create: resolved,
         will_write: writable.length,
         uncertain_count: uncertain.length,
         confirm_token: token,
