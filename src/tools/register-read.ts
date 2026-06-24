@@ -3,6 +3,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { searchMessages } from "../mail/search.js";
 import { summarize } from "../mail/summarize.js";
 import { getMessage } from "../mail/read.js";
+import { resolveLiveId } from "../mail/resolve-id.js";
 import { computeMailboxPatterns, resolveUuids, type MailContext } from "../mail/context.js";
 import { loadConfig } from "../config.js";
 
@@ -78,8 +79,8 @@ export function registerReadTools(server: McpServer, ctx: MailContext): void {
 
   server.registerTool(
     "get_message",
-    { description: "Read a full message (headers + plain body + attachment metadata) by id.", inputSchema: { id: z.string().describe("account::mailbox::rowid from search_messages") } },
-    async ({ id }) => json(await getMessage(id))
+    { description: "Read a full message (headers + plain body + attachment metadata) by id.", inputSchema: { id: z.string().describe("message id from search_messages") } },
+    async ({ id }) => json(await getMessage(resolveLiveId(ctx, id)))
   );
 
   server.registerTool(
