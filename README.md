@@ -77,7 +77,7 @@ Destructive and outward-facing actions are **two-step**. `send_message`, `delete
 | All-day reminders at 9:00 | ⏳ V1 fires day-of at 00:00 |
 | iCloud / Outlook / generic IMAP accounts | ⏳ V1 ships Gmail + a generic fallback (the provider seam is pluggable) |
 
-*Known quirk: a Gmail draft's id can change after the draft is edited; ids from search results (received mail) are stable. The write path scans the account's mailboxes to tolerate this.*
+*Known quirk: a message's internal row id is volatile — it changes when the message is moved, archived, or re-indexed. `search_messages` therefore returns a self-healing id carrying a stable message hash, and every id-taking tool (`get_message` plus all write tools) re-resolves the current row from the index before acting, so an id from a search result keeps working across read → archive → delete. A Gmail draft's id can likewise shift after the draft is edited; the write path scans the account's mailboxes to tolerate that.*
 
 ## Requirements
 
