@@ -1,3 +1,4 @@
+import { createRequire } from "node:module";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { buildMailContext } from "./mail/context.js";
@@ -8,8 +9,14 @@ import { registerHealthTools } from "./tools/register-health.js";
 import { registerConfigTools } from "./tools/register-config.js";
 import { ConfirmStore } from "./mail/confirm.js";
 
+// Resolves from dist/index.js (and src/index.ts under tsx) to the repo root,
+// so the handshake version always matches package.json.
+const { version } = createRequire(import.meta.url)("../package.json") as {
+  version: string;
+};
+
 async function main() {
-  const server = new McpServer({ name: "postmaster", version: "0.5.1" });
+  const server = new McpServer({ name: "postmaster", version });
 
   // The doctor tool is always available so a setup problem is explained
   // in-conversation rather than surfacing as a bare "disconnected".
