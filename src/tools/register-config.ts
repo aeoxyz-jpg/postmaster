@@ -2,11 +2,8 @@ import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { MailContext } from "../mail/context.js";
 import { listCalendars } from "../calendar/calendar.js";
-import { loadConfig, setDefaults } from "../config.js";
-
-function json(data: unknown) {
-  return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
-}
+import { setDefaults } from "../config.js";
+import { json } from "./util.js";
 
 export function registerConfigTools(server: McpServer, ctx: MailContext): void {
   server.registerTool(

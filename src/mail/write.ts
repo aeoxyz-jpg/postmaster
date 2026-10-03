@@ -1,30 +1,16 @@
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
-import { runOsa } from "../osa/runner.js";
+import { jxaCaller, osaRunner, type Runner } from "../osa/jxa.js";
 
-const HERE = dirname(fileURLToPath(import.meta.url));
-const jxa = (name: string) => join(HERE, "jxa", name);
-
-export type Runner = (file: string, args: string[]) => Promise<string>;
-const defaultRunner: Runner = (file, args) =>
-  runOsa({ language: "JavaScript", file, args, timeoutMs: 30000 });
-
-function parse<T>(json: string, script: string): T {
-  try {
-    return JSON.parse(json) as T;
-  } catch {
-    throw new Error(`${script} returned unparseable output: ${json.slice(0, 120)}`);
-  }
-}
+export type { Runner };
+const run = jxaCaller(join(dirname(fileURLToPath(import.meta.url)), "jxa"), osaRunner(30000));
 
 export interface SetStatusResult { id: string; prop: "read" | "flagged"; value: boolean; }
 
 export async function setStatus(
   id: string, prop: "read" | "flagged", value: boolean, opts: { runner?: Runner } = {}
 ): Promise<SetStatusResult> {
-  const runner = opts.runner ?? defaultRunner;
-  const json = await runner(jxa("set-status.js"), [id, prop, String(value)]);
-  return parse<SetStatusResult>(json, "set-status.js");
+  return run<SetStatusResult>("set-status.js", [id, prop, String(value)], opts.runner);
 }
 
 export interface MoveResult { id: string; movedTo: string; alreadyThere?: boolean; }
@@ -32,9 +18,7 @@ export interface MoveResult { id: string; movedTo: string; alreadyThere?: boolea
 export async function moveMessage(
   id: string, targetMailbox: string, opts: { runner?: Runner } = {}
 ): Promise<MoveResult> {
-  const runner = opts.runner ?? defaultRunner;
-  const json = await runner(jxa("move.js"), [id, targetMailbox]);
-  return parse<MoveResult>(json, "move.js");
+  return run<MoveResult>("move.js", [id, targetMailbox], opts.runner);
 }
 
 export interface DraftResult {
@@ -45,15 +29,18 @@ export interface DraftResult {
   fallbackVisible: boolean;
 }
 
-export async function createDraft(
-  input: { account: string; to: string; subject: string; body: string; cc?: string },
-  opts: { runner?: Runner } = {}
-): Promise<DraftResult> {
-  const runner = opts.runner ?? defaultRunner;
+interface ComposeInput { account: string; to: string; subject: string; body: string; cc?: string }
+
+function composeArgs(input: ComposeInput): string[] {
   const args = [input.account, input.to, input.subject, input.body];
   if (input.cc) args.push("--cc", input.cc);
-  const json = await runner(jxa("draft.js"), args);
-  return parse<DraftResult>(json, "draft.js");
+  return args;
+}
+
+export async function createDraft(
+  input: ComposeInput, opts: { runner?: Runner } = {}
+): Promise<DraftResult> {
+  return run<DraftResult>("draft.js", composeArgs(input), opts.runner);
 }
 
 export interface DeleteResult { id: string; deleted: boolean; }
@@ -61,20 +48,13 @@ export interface DeleteResult { id: string; deleted: boolean; }
 export async function deleteMessage(
   id: string, opts: { runner?: Runner } = {}
 ): Promise<DeleteResult> {
-  const runner = opts.runner ?? defaultRunner;
-  const json = await runner(jxa("delete.js"), [id]);
-  return parse<DeleteResult>(json, "delete.js");
+  return run<DeleteResult>("delete.js", [id], opts.runner);
 }
 
 export interface SendResult { sent: boolean; to: string; account: string; }
 
 export async function sendMessage(
-  input: { account: string; to: string; subject: string; body: string; cc?: string },
-  opts: { runner?: Runner } = {}
+  input: ComposeInput, opts: { runner?: Runner } = {}
 ): Promise<SendResult> {
-  const runner = opts.runner ?? defaultRunner;
-  const args = [input.account, input.to, input.subject, input.body];
-  if (input.cc) args.push("--cc", input.cc);
-  const json = await runner(jxa("send.js"), args);
-  return parse<SendResult>(json, "send.js");
+  return run<SendResult>("send.js", composeArgs(input), opts.runner);
 }

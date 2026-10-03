@@ -15,15 +15,20 @@ export function computeMailboxPatterns(accts: Pick<DetectedAccount, "provider">[
   return [...set];
 }
 
-/** Resolve account-name filters to uuids; empty -> all. */
-export function resolveUuids(ctx: MailContext, names?: string[]): string[] {
-  if (!names || names.length === 0) return ctx.accounts.map((a) => a.uuid);
-  const byName = new Map(ctx.accounts.map((a) => [a.name, a.uuid]));
+/** Resolve account-name filters to accounts; empty -> all; an unknown name throws. */
+export function selectAccounts(ctx: Pick<MailContext, "accounts">, names?: string[]): DetectedAccount[] {
+  if (!names || names.length === 0) return ctx.accounts;
+  const byName = new Map(ctx.accounts.map((a) => [a.name, a]));
   return names.map((n) => {
-    const u = byName.get(n);
-    if (!u) throw new Error(`unknown account: ${n}. Known: ${[...byName.keys()].join(", ")}`);
-    return u;
+    const a = byName.get(n);
+    if (!a) throw new Error(`unknown account: ${n}. Known: ${[...byName.keys()].join(", ")}`);
+    return a;
   });
+}
+
+/** Resolve account-name filters to uuids; empty -> all. */
+export function resolveUuids(ctx: Pick<MailContext, "accounts">, names?: string[]): string[] {
+  return selectAccounts(ctx, names).map((a) => a.uuid);
 }
 
 export async function buildMailContext(): Promise<MailContext> {

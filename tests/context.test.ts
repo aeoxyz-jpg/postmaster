@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { computeMailboxPatterns, resolveUuids } from "../src/mail/context.js";
+import { computeMailboxPatterns, resolveUuids, selectAccounts } from "../src/mail/context.js";
 import { GmailProvider, GenericProvider } from "../src/mail/provider.js";
 
 describe("computeMailboxPatterns", () => {
@@ -39,5 +39,16 @@ describe("resolveUuids", () => {
   });
   it("throws on unknown account name", () => {
     expect(() => resolveUuids(ctx, ["nope"])).toThrow(/unknown account/);
+  });
+});
+
+describe("selectAccounts", () => {
+  const ctx = { accounts: [{ name: "g", uuid: "u1" }, { name: "i", uuid: "u2" }] } as any;
+  it("returns all accounts when names omitted or empty", () => {
+    expect(selectAccounts(ctx).map((a) => a.name)).toEqual(["g", "i"]);
+    expect(selectAccounts(ctx, []).map((a) => a.name)).toEqual(["g", "i"]);
+  });
+  it("throws on an unknown name instead of silently dropping it", () => {
+    expect(() => selectAccounts(ctx, ["g", "nope"])).toThrow(/unknown account: nope/);
   });
 });

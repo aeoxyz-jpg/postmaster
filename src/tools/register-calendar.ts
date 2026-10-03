@@ -5,6 +5,7 @@ import { resolveEvents, type EventDraft, type ResolvedEvent } from "../calendar/
 import { listCalendars, listEvents, createEvents, updateEvent, describeEvent, deleteEvent, type CalendarEventInput } from "../calendar/calendar.js";
 import { resolveDefaultCalendar, detectDefaultCalendar } from "../calendar/default-calendar.js";
 import { loadConfig } from "../config.js";
+import { json, confirmGate } from "./util.js";
 
 const DAY_MS = 86400_000;
 // Date-only inputs are interpreted as a full local day so a 'YYYY-MM-DD' filter is intuitive.
@@ -15,10 +16,6 @@ function normStart(s?: string): string | undefined {
 function normEnd(s?: string): string | undefined {
   if (!s) return undefined;
   return /^\d{4}-\d{2}-\d{2}$/.test(s) ? `${s}T23:59:59` : s;
-}
-
-function json(data: unknown) {
-  return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
 }
 
 const draftSchema = z.object({
@@ -108,18 +105,17 @@ export function registerCalendarTools(server: McpServer, confirms: ConfirmStore)
   server.registerTool("delete_calendar_event",
     { description: "Delete a calendar event by uid (also removes its reminders). TWO-STEP: call without confirm_token to get a token + a summary of which event; call again with the token to delete. Cannot be undone.",
       inputSchema: { uid: z.string(), confirm_token: z.string().optional() } },
-    async ({ uid, confirm_token }) => {
-      if (!confirm_token) {
+    async ({ uid, confirm_token }) => confirmGate(confirms, confirm_token, {
+      kind: "delete_calendar_event",
+      request: "delete",
+      stage: async () => {
         const info = await describeEvent(uid);
         if (!info.found) throw new Error(`calendar event not found: ${uid}`);
         const summary = `Delete event "${info.title}" from "${info.calendar}"`;
-        const { token } = confirms.stage("delete_calendar_event", { uid }, summary);
-        return json({ pending: true, confirm_token: token, summary, note: "Re-call delete_calendar_event with this confirm_token to delete." });
-      }
-      const action = confirms.consume(confirm_token);
-      if (action.kind !== "delete_calendar_event" || action.args.uid !== uid) {
-        throw new Error("confirm_token does not match this delete request");
-      }
-      return json(await deleteEvent(uid));
-    });
+        return { args: { uid }, summary, review: { summary } };
+      },
+      matches: (staged) => staged.uid === uid,
+      execute: () => deleteEvent(uid),
+      note: "Re-call delete_calendar_event with this confirm_token to delete.",
+    }));
 }

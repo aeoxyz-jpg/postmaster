@@ -5,10 +5,8 @@ import { resolveLiveId, describeMessage } from "../mail/resolve-id.js";
 import { resolveDefaultAccount } from "../mail/default-account.js";
 import type { ConfirmStore } from "../mail/confirm.js";
 import type { MailContext } from "../mail/context.js";
+import { json, confirmGate } from "./util.js";
 
-function json(data: unknown) {
-  return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
-}
 function providerForId(ctx: MailContext, id: string) {
   const account = id.split("::")[0];
   const acct = ctx.accounts.find((a) => a.name === account);
@@ -47,49 +45,45 @@ export function registerWriteTools(server: McpServer, ctx: MailContext, confirms
   server.registerTool("delete_message",
     { description: "Delete a message (moves to trash). TWO-STEP: call without confirm_token to get a token + summary; call again with the token to execute.",
       inputSchema: { id: z.string(), confirm_token: z.string().optional() } },
-    async ({ id, confirm_token }) => {
-      if (!confirm_token) {
+    async ({ id, confirm_token }) => confirmGate(confirms, confirm_token, {
+      kind: "delete_message",
+      request: "delete",
+      stage: async () => {
         const d = describeMessage(ctx, id);
         const summary = d
           ? `Delete message "${d.subject}" from ${d.from} (${d.date}) — moves to trash`
           : `Delete message ${id} (moves to trash)`;
-        const { token } = confirms.stage("delete_message", { id }, summary);
-        return json({ pending: true, confirm_token: token, summary, note: "Re-call delete_message with this confirm_token to execute." });
-      }
-      const action = confirms.consume(confirm_token);
-      if (action.kind !== "delete_message" || action.args.id !== id) {
-        throw new Error("confirm_token does not match this delete request");
-      }
-      return json(await deleteMessage(resolveLiveId(ctx, id)));
-    });
+        return { args: { id }, summary, review: { summary } };
+      },
+      matches: (staged) => staged.id === id,
+      execute: () => deleteMessage(resolveLiveId(ctx, id)),
+      note: "Re-call delete_message with this confirm_token to execute.",
+    }));
 
   // send is destructive + outward-facing -> two-step confirmation (like delete).
   server.registerTool("send_message",
     { description: "Send an email. account is optional — omitted uses your default account (auto-seeded on first use). TWO-STEP: call without confirm_token to get a token + a full summary of sender/recipients/subject/body for review; call again with the token to actually send. Sending cannot be undone.",
       inputSchema: { account: z.string().optional(), to: z.string(), subject: z.string(), body: z.string(), cc: z.string().optional(), confirm_token: z.string().optional() } },
-    async ({ account, to, subject, body, cc, confirm_token }) => {
-      if (!confirm_token) {
-        // Resolve the default ONLY at stage time; the staged token is the source of truth for
-        // what the user reviewed. (Re-resolving at confirm could pick a different account if the
-        // default changed in between, and wrongly reject an already-reviewed send.)
+    async ({ account, to, subject, body, cc, confirm_token }) => confirmGate(confirms, confirm_token, {
+      kind: "send_message",
+      request: "send",
+      // Resolve the default ONLY at stage time; the staged token is the source of truth for
+      // what the user reviewed. (Re-resolving at confirm could pick a different account if the
+      // default changed in between, and wrongly reject an already-reviewed send.)
+      stage: async () => {
         const { account: acct, reseeded } = resolveDefaultAccount(ctx.accounts, account);
         const summary = `Send from ${acct} to ${to}${cc ? ` (cc ${cc})` : ""} — subject: "${subject}"`;
-        const { token } = confirms.stage("send_message", { account: acct, to, subject, body, cc: cc ?? null }, summary);
-        return json({
-          pending: true, confirm_token: token,
-          review: { account: acct, to, cc: cc ?? null, subject, body },
-          defaultReseeded: reseeded,
-          note: "Review the full message above. Re-call send_message with this confirm_token to send. This cannot be undone.",
-        });
-      }
-      const action = confirms.consume(confirm_token);
-      const acct = action.args.account as string; // what was reviewed
-      if (action.kind !== "send_message"
-        || (account != null && account !== acct) || action.args.to !== to
-        || action.args.subject !== subject || action.args.body !== body
-        || (action.args.cc ?? null) !== (cc ?? null)) {
-        throw new Error("confirm_token does not match this send request");
-      }
-      return json(await sendMessage({ account: acct, to, subject, body, cc }));
-    });
+        return {
+          args: { account: acct, to, subject, body, cc: cc ?? null },
+          summary,
+          review: { review: { account: acct, to, cc: cc ?? null, subject, body }, defaultReseeded: reseeded },
+        };
+      },
+      matches: (staged) =>
+        (account == null || account === staged.account) && staged.to === to
+        && staged.subject === subject && staged.body === body
+        && (staged.cc ?? null) === (cc ?? null),
+      execute: (staged) => sendMessage({ account: staged.account, to, subject, body, cc }),
+      note: "Review the full message above. Re-call send_message with this confirm_token to send. This cannot be undone.",
+    }));
 }

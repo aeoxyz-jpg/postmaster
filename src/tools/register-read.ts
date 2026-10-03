@@ -4,16 +4,14 @@ import { searchMessages } from "../mail/search.js";
 import { summarize } from "../mail/summarize.js";
 import { getMessage } from "../mail/read.js";
 import { resolveLiveId } from "../mail/resolve-id.js";
-import { computeMailboxPatterns, resolveUuids, type MailContext } from "../mail/context.js";
+import { computeMailboxPatterns, resolveUuids, selectAccounts, type MailContext } from "../mail/context.js";
 import { loadConfig } from "../config.js";
+import { json } from "./util.js";
 
 const DAY = 86400;
 function sinceFromDays(days?: number): number {
   if (days == null) return 0;
   return Math.floor(Date.now() / 1000) - days * DAY;
-}
-function json(data: unknown) {
-  return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
 }
 
 export function registerReadTools(server: McpServer, ctx: MailContext): void {
@@ -60,13 +58,11 @@ export function registerReadTools(server: McpServer, ctx: MailContext): void {
       },
     },
     async ({ query, accounts, from, days, unreadOnly, limit }) => {
-      const selected = accounts
-        ? ctx.accounts.filter((a) => accounts.includes(a.name))
-        : ctx.accounts;
+      const selected = selectAccounts(ctx, accounts);
       const res = searchMessages(ctx.db, {
         query,
         accountNames: ctx.accountNames,
-        accountUuids: resolveUuids(ctx, accounts),
+        accountUuids: selected.map((a) => a.uuid),
         mailboxPatterns: computeMailboxPatterns(selected),
         fromFilter: from,
         sinceEpoch: sinceFromDays(days),
@@ -87,13 +83,11 @@ export function registerReadTools(server: McpServer, ctx: MailContext): void {
     "summarize",
     { description: "Per-account totals (total/unread/flagged) over a time window — daily/weekly digest.", inputSchema: { accounts: z.array(z.string()).optional(), days: z.number().default(7) } },
     async ({ accounts, days }) => {
-      const selected = accounts
-        ? ctx.accounts.filter((a) => accounts.includes(a.name))
-        : ctx.accounts;
+      const selected = selectAccounts(ctx, accounts);
       return json(
         summarize(ctx.db, {
           accountNames: ctx.accountNames,
-          accountUuids: resolveUuids(ctx, accounts),
+          accountUuids: selected.map((a) => a.uuid),
           mailboxPatterns: computeMailboxPatterns(selected),
           sinceEpoch: sinceFromDays(days),
         })

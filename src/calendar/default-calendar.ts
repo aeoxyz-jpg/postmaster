@@ -1,14 +1,13 @@
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
-import { runOsa } from "../osa/runner.js";
+import { osaRunner, type Runner } from "../osa/jxa.js";
 import { loadConfig, saveConfig } from "../config.js";
 import type { CalendarInfo } from "./calendar.js";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 
-export type Runner = (file: string, args: string[]) => Promise<string>;
-const defaultRunner: Runner = (file, args) =>
-  runOsa({ language: "JavaScript", file, args, timeoutMs: 15000 });
+export type { Runner };
+const defaultRunner = osaRunner(15000);
 
 /** EventKit's "default calendar for new events" title, or null if unavailable/ungranted. */
 export async function detectDefaultCalendar(runner: Runner = defaultRunner): Promise<string | null> {
