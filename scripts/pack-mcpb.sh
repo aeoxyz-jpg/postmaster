@@ -20,7 +20,9 @@ cp -R dist "$STAGE/dist"
 cp manifest.json package.json LICENSE-MIT LICENSE-APACHE NOTICE README.md "$STAGE/"
 
 echo "==> installing production dependencies into the bundle"
-( cd "$STAGE" && npm install --omit=dev --no-audit --no-fund >/dev/null )
+# Drop devDependencies first: the bundle never needs them, and npm 10 (CI's Node 22)
+# crashes resolving vitest 4's tree under --omit=dev ("reading 'edgesOut'").
+( cd "$STAGE" && npm pkg delete devDependencies && npm install --omit=dev --no-audit --no-fund >/dev/null )
 
 echo "==> packing .mcpb"
 npx --yes @anthropic-ai/mcpb pack "$STAGE" "$OUT"
